@@ -1,0 +1,261 @@
+body {
+  background-color: #1F2838;
+  color: #FFFFFF;
+  text-align: center;
+  padding: 80px;
+  font-family: Helvetica !important;
+}
+
+.Login h1{
+  font-size: 16px;
+  padding-top: 20px;
+  color: #C5C6C7;
+}
+
+.Login h2{
+  font-weight: 600;
+  padding-bottom: 20px;
+  font-size: 36px;
+  font-family: Verdana !important;
+}
+
+.Login .loginForm{
+  padding-right: 90px;
+  display: inline-table;
+  background-color: #1F2838;
+  color: #C5C6C7;
+  min-width: 350px;
+  max-width: 350px;
+}
+
+.Login .registrationForm{
+  padding-left: 90px;
+  display: inline-table;
+  color: #C5C6C7;
+  background-color: #1F2838;
+  min-width: 350px;
+  max-width: 350px;
+}
+
+.Login .title{ /*Headers of the forms*/
+  font-size: 24px;
+  color: #FFFFFF;
+}
+
+.Login p{ /*Password requirements*/
+  text-align: left;
+  font-size: 12px;
+}
+
+.Login .forgottenPassword{
+  padding: 15px;
+  display: inline;
+}
+
+.Login button{
+  background-color: #1F2838;
+  color: #C5C6C7;
+}
+
+.Login .form-control{
+  background-color:  #1F2838;
+  color: #C5C6C7;
+}
+
+.forgottenPassword h1{
+  font-weight: 600;
+  font-size: 36px;
+  font-family: Verdana !important;
+}
+
+.forgottenPassword h2{
+  font-size: 16px;
+  padding-top: 10px;
+  padding-bottom: 20px;
+  color: #C5C6C7;
+}
+  
+.forgottenPassword .submitUsername{
+  display: inline-table;
+  min-width: 260px;
+  color: #C5C6C7;
+}
+
+.forgottenPassword .returnToLogin{
+  padding-left: 15px;
+  display: inline;
+}
+
+.forgottenPassword button{
+  background-color: #1F2838;
+  color: #C5C6C7;
+}
+
+.forgottenPassword .form-control{
+  background-color:  #1F2838;
+  color: #C5C6C7;
+}
+
+.resetPassword h1{
+  font-weight: 600;
+  font-size: 36px;
+  font-family: Verdana !important;
+}
+
+.resetPassword h2{
+  font-size: 16px;
+  padding-top: 10px;
+  padding-bottom: 20px;
+  color: #C5C6C7;
+}
+  
+.resetPassword .resetPasswordForm{
+  display: inline-table;
+  min-width: 260px;
+  max-width: 260px;
+  color: #C5C6C7;
+}
+
+.resetPassword .returnToLogin{
+  padding-left: 15px;
+  display: inline;
+}
+
+.resetPassword button{
+  background-color: #1F2838;
+  color: #C5C6C7;
+}
+
+.resetPassword .form-control{
+  background-color:  #1F2838;
+  color: #C5C6C7;
+}
+
+.resetPassword p{ /*Password requirements*/
+  text-align: left;
+  font-size: 12px;
+}
+
+.resetPasswordWithPasswordForm{
+  display: inline-table;
+  min-width: 260px;
+  max-width: 260px;
+}
+
+.resetPasswordWithQuestionForm{
+  display: inline-table;
+  min-width: 260px;
+  max-width: 260px;
+}
+
+.resetPasswordWithQuestionForm{
+  display: inline-table;
+  min-width: 260px;
+  max-width: 260px;
+  padding: 20px;
+}
+
+.description{
+  min-width: 750px;
+  /* min-height: 500px; */
+}
+
+.createCommunityForm{
+  display: inline-table;
+  background-color: #1F2838;
+  max-width: 500px;
+}
+
+.createCommunityForm h1{
+  color: #fff;
+}
+
+.createCommunityForm label{
+  color: #fff;
+}
+
+.createCommunityForm input{
+  color: #1F2838;
+}
+
+.createCommunityForm textarea{
+  color: #1F2838;
+}
+
+.createPostFormOuter{
+  display: inline-table;
+}
+
+.createPostFormInner{
+  color: #1F2838;
+  max-width: 500px;
+  display: inline-table;
+}
+
+.createPostFormInner h1{
+  color: #fff;
+}
+
+.createPostFormInner label{
+  color: #fff;
+}
+
+.createPostFormInner textarea{
+  color: #1F2838;
+}
+
+.mainForm{
+  display: inline-table;
+}
+
+.profileForm{
+  display: inline-table;
+}
+
+.communitiesForm{
+  display: inline-table;
+}
+
+.Settings{
+  color: #1F2838;
+}
+
+.Settings button{
+  color: #1F2838;
+}
+
+.Settings h2{
+  color: #fff;
+}
+
+.Settings h4{
+  color: #fff;
+}
+
+.Settings label{
+  color: #fff;
+}
+
+.searchBar{
+  color: #1F2838;
+}
+
+.dispCommunities{
+  color: #1F2838;
+}
+
+.dispCommunities h3{
+  color: #1F2838;
+}
+
+.dispCommunities h5{
+  color: #1F2838;
+}
+
+.dispCommentsOptions{
+  color: #1F2838;
+}
+
+.commentForm{
+  color: #1F2838;
+}
