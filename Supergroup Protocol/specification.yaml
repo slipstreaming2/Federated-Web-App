@@ -1,0 +1,978 @@
+openapi: 3.0.0
+info:
+  description:
+    $ref: Description.md
+  version: "1.0.0"
+  title: "Supergroup A Protocol"
+tags:
+  - name: Caching
+    description:
+      $ref: Caching.md
+  - name: Security
+    description:
+      $ref: Security.md
+  - name: Communities
+  - name: Posts
+  - name: Users
+  - name: Other
+parameters:
+  ClientHost:
+    name: Client-Host
+    in: header
+    required: true
+    description: The hostname (including port) of the client server.
+    schema:
+      type: string
+  UserIDHeader:
+    name: User-ID
+    in: header
+    required: true
+    description: The user making the request.
+    schema:
+      type: string
+      format: ^[a-zA-Z0-9-_]{1,24}$
+paths:
+  /fed/communities:
+    get:
+      tags:
+        - Communities
+      summary: Gets a list of the IDs of communities on the server
+      parameters:
+        - $ref: "#/parameters/ClientHost"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: "^[a-zA-Z0-9-_]{1,24}$"
+              example: ["cats", "dogs", "cs3099", "physics"]
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /fed/communities/{id}:
+    get:
+      tags:
+        - Communities
+      summary: Gets a community by ID
+      description: >
+        Note the reacts paramater in the community response is entierly 
+        optional and may not be present. Also when implementing reacts 
+        every community must return a like and dislike react. This is 
+        so instances which implement an up/down vote system can use these 
+        reacts for this. 
+        
+        Another item to note about reacts is that they contain a path and a 
+        unicode property. Only one of these has to be set. The unicode property 
+        should represent a single unicode character to be displayed as that 
+        react. With the unicode for a react there is no length limit placed 
+        on it becuase calculating the length of a unicode string is hard. For 
+        example the character '🏴󠁧󠁢󠁳󠁣󠁴󠁿' has length 7/9 but only appears as a single 
+        character. 
+      parameters:
+        - $ref: "#/parameters/ClientHost"
+        - in: path
+          name: id
+          description: "ID of the community being requested"
+          required: true
+          schema:
+            type: string
+            format: "^[a-zA-Z0-9-_]{1,24}$"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Community"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /fed/communities/{id}/timestamps:
+    get:
+      tags:
+        - Communities
+      summary: Gets the timestamps of last modification of all posts in a community
+      parameters:
+        - $ref: "#/parameters/ClientHost"
+        - in: path
+          name: id
+          description: "ID of the community being requested"
+          required: true
+          schema:
+            type: string
+            format: "^[a-zA-Z0-9-_]{1,24}$"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PostTimestamp"
+              example:
+                [
+                  {
+                    "id": "884f0f3c-04d9-4d93-bb9c-b140ff262a53",
+                    "modified": 1602868491,
+                  },
+                  {
+                    "id": "07f3c861-88a9-46f3-bd0e-9346fb6b5342",
+                    "modified": 1552832552,
+                  },
+                  {
+                    "id": "802402b4-0644-4282-9e0a-6b179c9f6e58",
+                    "modified": 1602149423,
+                  },
+                ]
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /fed/posts:
+    get:
+      tags:
+        - Posts
+      summary: Gets all posts matching filters
+      parameters:
+        - $ref: "#/parameters/ClientHost"
+        - $ref: "#/parameters/UserIDHeader"
+        - name: limit
+          in: query
+          description: Filters by the n latest posts
+          required: false
+          explode: true
+          schema:
+            type: integer
+        - name: community
+          in: query
+          description: Filters posts by community
+          required: false
+          explode: true
+          schema:
+            type: string
+        - name: minDate
+          in: query
+          description: Filters by minimum creation date
+          required: false
+          explode: true
+          schema:
+            type: integer
+            format: unix_timestamp
+        - name: author
+          in: query
+          description: Filters by author
+          required: false
+          explode: true
+          schema:
+            type: string
+            format: "^[a-zA-Z0-9-_]{1,24}$"
+            example: "coolusername123"
+        - name: host
+          in: query
+          description: Filters by server hostname
+          required: false
+          explode: true
+          schema:
+            type: string
+            example: "cool.servername.net"
+        - name: parentPost
+          in: query
+          description: Filters by ID of parent post (will exclude posts with no parent)
+          required: false
+          explode: true
+          schema:
+            type: string
+            format: uuidv4
+        - name: includeSubChildrenPosts
+          in: query
+          description: |
+            Include children posts, children of children
+            posts and so on.
+          required: false
+          explode: true
+          schema:
+            type: boolean
+            default: true
+        - name: contentType
+          in: query
+          description: Filters by type of post content.
+          required: false
+          explode: true
+          schema:
+            type: string
+            example: "markdown"
+
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      tags:
+        - Posts
+      summary: Creates a new post
+      description: |
+        If the post is in response to another post, the `title` field must be
+        set to `null`.
+
+        Servers may decide which types of contnent they will accept as posts
+        (including comments), however they must at least accept `text` content
+        objects. If the server does not accept a particular type of content
+        then it should return a `501` error.
+
+        If a server can not render `markdown` content objects, it should
+        display it as plain text (as opposed to rejecting the request).
+
+        `content` can contain multiple objects containing different kinds of
+        content. For example, `markdown` could be combined with a (not yet
+        implemented) `poll` and/or `image` type, allowing text, images and a
+        poll in a single post. However, only a single object of each kind is
+        allowed and there are restrictions on certain combinations, currently
+        `text` and `markdown` are mutually exclusive.
+      parameters:
+        - $ref: "#/parameters/ClientHost"
+        - $ref: "#/parameters/UserIDHeader"
+      requestBody:
+        description: New post to be added to a community
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewPost"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "501":
+          description: Not Implemented
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /fed/posts/{id}:
+    get:
+      tags:
+        - Posts
+      summary: Gets a post
+      parameters:
+        - $ref: "#/parameters/ClientHost"
+        - $ref: "#/parameters/UserIDHeader"
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuidv4
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      tags:
+        - Posts
+      summary: Edits a post
+      description: "Only allowed if request is made by the server associated with the author or the admins of the community the post belongs to, 403 returned otherwise"
+      parameters:
+        - $ref: "#/parameters/ClientHost"
+        - $ref: "#/parameters/UserIDHeader"
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuidv4
+      requestBody:
+        description: New post to be added to a community
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePost"
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags:
+        - Posts
+      summary: Deletes a post
+      description: "Only allowed if request is made by the server associated with the author or the admins of the community the post belongs to, 403 returned otherwise"
+      parameters:
+        - $ref: "#/parameters/ClientHost"
+        - $ref: "#/parameters/UserIDHeader"
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuidv4
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  
+  /fed/key:
+    get:
+      tags:
+        - Other
+      summary: Gets the server's public key
+      responses:
+        "200":
+          description: OK
+          content:
+            application/x-pem-file:
+              schema:
+                type: string
+                example: |
+                  -----BEGIN PUBLIC KEY-----
+                  MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvR0PSqO1+QLMJIzx2Ubl
+                  rfGVhxBpinNoN112WUWFL4jLgs9b/7RaOwMnf4hgzf8upxABDKSSxzd76fKl2rrH
+                  KYyQieJdU5bx2U8Oo8GK3p6/UWE+plLPV05EwpTyzexFA0KvvpYlKYQALFcqqP5j
+                  LZxt6n/yP0vWsT2IsUVDJHkpFjWK0lW8p4ZsaWOXGhOjDAFs/H1Tq95ApSQHveoT
+                  j8PBEFm+zCXUzE0XFUjOJXTpt6jUqDri4Z4aDKUPrXb+lK8OlZ6lijQMuCPsQeXT
+                  vMtq16LU2yIi/MyCQxDgWTgzLUwz053PpgiYoSamjo+g89oGSPcZAwlrW6HJJA5+
+                  uQIDAQAB
+                  -----END PUBLIC KEY-----
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "501":
+          description: Not Implemented
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /fed/discover:
+    get:
+      tags:
+        - Other
+      summary: Return all known servers
+      description: |
+        Returns all of the servers that are known by the
+        current server.
+
+        The array should be ordered with more 'important'
+        hosts at the beginning and the least 'important'
+        at the end.
+
+        The 'importance' of a server is implementation
+        specific, but some examples include using the
+        total number of posts made to that server by
+        the current server.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  example: "cooldomain.edu"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "501":
+          description: Not Implemented
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /fed/users:
+    get:
+      tags:
+        - Users
+      summary: Search for users
+      description: >
+        All users should be returned if no filters
+        are passed.
+      parameters:
+        - name: prefix
+          in: query
+          description: Filters users by ID prefix
+          required: false
+          explode: true
+          schema:
+            type: string
+            example: joh
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: "^[a-zA-Z0-9-_]{1,24}$"
+                  example: john
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+            
+  /fed/users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Gets a user by ID
+      parameters:
+        - in: path
+          name: id
+          description: "ID of the user being requested"
+          required: true
+          schema:
+            type: string
+            format: "^[a-zA-Z0-9-_]{1,24}$"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+    post:
+      tags:
+        - Users 
+      summary: Send the user a message 
+      parameters:
+        - in: path
+          name: id 
+          description: "ID of the user being messaged"
+          required: true 
+          schema:
+            type: string 
+            format: "^[a-zA-Z0-9-_]{1,24}$"
+      requestBody:
+        description: The message being sent 
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectMessage"
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+        '501':
+          description: Not Implemented
+components:
+  schemas:
+    UserId:
+      type: object
+      required:
+        - id
+        - host
+      properties:
+        id:
+          type: string
+          format: "^[a-zA-Z0-9-_]{1,24}$"
+          example: "coolusername123"
+        host:
+          type: string
+          example: "cooldomain.edu"
+
+    Community:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - admins
+      properties:
+        id:
+          type: string
+          format: "^[a-zA-Z0-9-_]{1,24}$"
+          example: "cs3099"
+        title:
+          type: string
+          example: "CS3099: Group Project"
+        description:
+          type: string
+          example: "CS3099 community for discussion, tutorials and quizzes!"
+        admins:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserId"
+          example: [{ "id": "coolusername123", "host": "cooldomain.edu" }]
+        reacts:
+          type: array
+          items:
+            $ref: "#/components/schemas/React"
+          example: [
+            {"id": "like", "name": "like", "path": "null", "unicode":"👍", "positivity": "1"}, 
+            {"id": "dislike", "name": "dislike", "path": "null", "unicode":"👎", "positivity": "0"}
+          ]
+
+    NewPost:
+      description: >
+        Use the `Client-Host` HTTP header to get the host of the server
+        that the user belongs to.
+      type: object
+      required:
+        - community
+        - title
+        - content
+      properties:
+        community:
+          type: string
+          format: "^[a-zA-Z0-9-_]{1,24}$"
+          example: "sailing"
+        parentPost:
+          type: string
+          format: "uuidv4"
+          example: "dafca76d-5883-4eff-959a-d32bc9f72e1a"
+        title:
+          type: string
+          example: "Bezos's Wealth Overflows 64-bit Unsigned Integer, Is Now Homeless"
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostContent"
+    UpdatePost:
+      type: object
+      required:
+        - title
+        - content
+      properties:
+        title:
+          type: string
+          example: "Bezos's Wealth Overflows 64-bit Signed Integer, Now Massively In Debt"
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostContent"
+
+    Post:
+      type: object
+      required:
+        - id
+        - community
+        - children
+        - title
+        - content
+        - author
+        - modified
+        - created
+      properties:
+        id:
+          type: string
+          format: uuidv4
+          example: "5ab3acce-e9d1-4b3a-be97-60d2cbe32a4c"
+        community:
+          type: string
+          format: "^[a-zA-Z0-9-_]{1,24}$"
+          example: "sailing"
+        parentPost:
+          type: string
+          format: "uuidv4"
+          example: "dafca76d-5883-4eff-959a-d32bc9f72e1a"
+        children:
+          type: array
+          items:
+            type: string
+            format: uuidv4v4
+          example:
+            [
+              "b78b29f4-88d2-4500-b3f9-704449b262e2",
+              "53da9025-0ba3-4966-8703-824c7418172a",
+              "d2073b6a-3115-4089-b198-6db799bc53ad",
+            ]
+        title:
+          type: string
+          example: "Bezos's Wealth Overflows 64-bit Signed Integer, Now Massively In Debt"
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostContent"
+        author:
+          $ref: "#/components/schemas/UserId"
+        modified:
+          type: integer
+          format: unix_timestamp
+          example: 1552832552
+        created:
+          type: integer
+          format: unix_timestamp
+          example: 1552832584
+        reacts:
+          type: array
+          items: 
+            $ref: "#/components/schemas/PostReaction"
+          example:
+            [
+              {
+                "react": {"id": "like", "name": "like", "path": "null", "unicode":"👍", "positivity": "1"},
+                "reactions" : [
+                    "b78b29f4-88d2-4500-b3f9-704449b262e2",
+                    "53da9025-0ba3-4966-8703-824c7418172a",
+                    "d2073b6a-3115-4089-b198-6db799bc53ad",
+                ]
+              },{
+                
+                "react": {"id": "dislike", "name": "dislike", "path": "null", "unicode":"👎", "positivity": "0"},
+                "reactions" : [
+                    "b78b29f4-88d2-4500-b3f9-704449b262e2",
+                    "53da9025-0ba3-4966-8703-824c7418172a",
+                    "d2073b6a-3115-4089-b198-6db799bc53ad",
+                ]
+              },{
+                "react": {"id": "cat_jam", "name": "cat jam", "path": "cooldomain.edu/cat_jam.gif", "unicode":"null", "positivity": "0.5"},
+                "reactions" : [
+                    "b78b29f4-88d2-4500-b3f9-704449b262e2",
+                    "53da9025-0ba3-4966-8703-824c7418172a",
+                    "d2073b6a-3115-4089-b198-6db799bc53ad",
+                ]
+              }
+            ] 
+  
+    React:
+      type: object 
+      required:
+        - id
+        - name 
+        - path
+        - unicode 
+        - positivity
+      properties:
+        id:
+          type: string
+          format: "^[a-zA-Z0-9-_]{1,24}$"
+          example: "sailing"
+        name:
+          type: string
+          example: "sailing boat emoji"
+        path:
+          type: string 
+          example: "cooldomain.edu/.../img.png"
+        unicode:
+          type: string 
+          example: "😀"
+        positivity:
+          type: number
+          format: "[0-1]"
+          example: 0.5
+
+    PostReaction:
+      type: object
+      required:
+        - react
+        - reactions
+        - userReactUUID
+      properties:
+        react:
+          $ref: "#/components/schemas/React"
+        reactions:
+          type: array
+          items:
+            type: string
+            format: uuidv4v4
+          example:
+            [
+              "b78b29f4-88d2-4500-b3f9-704449b262e2",
+              "53da9025-0ba3-4966-8703-824c7418172a",
+              "d2073b6a-3115-4089-b198-6db799bc53ad",
+            ]
+        userReactUUID:
+          type: string 
+          format: uuidv4v4
+
+    PostTimestamp:
+      type: object
+      required:
+        - id
+        - modified
+      properties:
+        id:
+          type: string
+          format: uuidv4
+          example: "5ab3acce-e9d1-4b3a-be97-60d2cbe32a4c"
+        modified:
+          type: integer
+          format: unix_timestamp
+          example: 1552832552
+
+    User:
+      type: object
+      required:
+        - id
+        - posts
+      properties:
+        id:
+          type: string
+          format: "^[a-zA-Z0-9-_]{1,24}$"
+          example: "john"
+        about:
+          type: string 
+          example: "A place for a user to write an about / bio"
+        avatarUrl:
+          type: string 
+          example: "cooldomain.edu/media/profile_imgs/avatar.png"
+        posts:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - host
+            properties:
+              id:
+                type: string
+                format: uuidv4
+                example: "5ab3acce-e9d1-4b3a-be97-60d2cbe32a4c"
+              host:
+                type: string
+                example: "cooldomain.edu"
+      
+    DirectMessage:
+      type: object 
+      required:
+        - title 
+        - content 
+      properties:
+        title:
+          type: string
+          example: "Why ban?"
+        content:
+          $ref: "#/components/schemas/PostContent"
+
+    PostContent:
+      oneOf:
+        - $ref: "#/components/schemas/PostContentText"
+        - $ref: "#/components/schemas/PostContentMarkdown"
+        - $ref: "#/components/schemas/PostContentReact"
+
+    PostContentText:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: object
+          required:
+            - text
+          properties:
+            text:
+              type: string
+              example: >-
+                Sed ut perspiciatis, unde omnis iste natus error sit
+                voluptatem accusantium doloremque laudantium, totam
+                rem aperiam eaque ipsa, quae ab illo inventore veritatis
+                et quasi architecto beatae vitae dicta sunt, explicabo.
+                Nemo enim ipsam voluptatem, quia voluptas sit, aspernatur
+                aut odit aut fugit, sed quia consequuntur magni dolores
+                eos, qui ratione voluptatem sequi nesciunt, neque porro
+                quisquam est, qui dolorem ipsum, quia dolor sit amet
+                consectetur adipisci[ng]velit, sed quia non-numquam
+                [do] eius modi tempora inci[di]dunt, ut labore et
+                dolore magnam aliquam quaerat voluptatem.
+
+    PostContentMarkdown:
+      type: object
+      required:
+        - markdown
+      properties:
+        markdown:
+          type: object
+          required:
+            - text
+          properties:
+            text:
+              type: string
+              example: |
+                # Title
+
+                ```javascript
+                console.log("Hello World")
+                ```
+
+                ## Subtitle
+
+                ** Some Bold Text **
+
+    PostContentReact:
+      type: object
+      required:
+        - id
+      properties:
+        react:
+          type: string
+          example: "like"
+
+    Error:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          example: "A short description of the erorr"
+        message:
+          type: string
+          example: >-
+            A long description of the error, giving instructions
+            on how it can be solved and why it occured.
